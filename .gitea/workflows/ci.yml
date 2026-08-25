@@ -58,9 +58,59 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # TODO(Phase 2+): SAST (CodeQL/equivalent), NuGet + npm vulnerability
-      # scan, secret scan (gitleaks-class) — wired once there's real
-      # application code to scan meaningfully, per
-      # docs/devops/cicd.md "Security Scan" stage.
-      - name: Placeholder
-        run: echo "Security scanning wired in a follow-up — see docs/devops/cicd.md"
+        with:
+          fetch-depth: 0
+
+      # Secret scan (gitleaks-class), scanning git history (not the raw
+      # working tree, which would flag gitignored/generated noise) via the
+      # official image directly rather than a marketplace action, so this
+      # step works unmodified on Gitea Actions or GitHub Actions.
+      - name: Secret scan (gitleaks)
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source=/repo --redact -v
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: NuGet dependency vulnerability scan
+        run: |
+          dotnet restore ITSM.slnx
+          dotnet list ITSM.slnx package --vulnerable --include-transitive | tee nuget-vuln.log
+          ! grep -Eqi "Critical|High" nuget-vuln.log
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/package-lock.json
+      - name: npm dependency vulnerability scan
+        working-directory: apps
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+      - name: SAST (semgrep)
+        run: |
+          python3 -m pip install --quiet semgrep
+          semgrep scan --error --severity=ERROR \
+            --config=p/security-audit --config=p/secrets \
+            --config=p/csharp --config=p/typescript \
+            --exclude=apps/node_modules .
+
+  infra-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/iac
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.7.*"
+      - name: Format check
+        run: tofu fmt -check -recursive
+      - name: Init (no backend, validate only)
+        run: tofu init -backend=false
+      - name: Validate
+        run: tofu validate

@@ -14,6 +14,17 @@ public abstract class Entity
 
     public Guid Id { get; protected init; } = Guid.NewGuid();
 
+    /// <summary>
+    /// Maintained by TimestampSaveChangesInterceptor, not application code
+    /// or a database trigger (docs/rules/database-rules.md) — settable only
+    /// from Platform.Infrastructure via InternalsVisibleTo, readable from
+    /// every layer.
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; internal set; }
+
+    /// <summary>Null until the first update; see <see cref="CreatedAt"/> remarks.</summary>
+    public DateTimeOffset? UpdatedAt { get; internal set; }
+
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     protected void Raise(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);

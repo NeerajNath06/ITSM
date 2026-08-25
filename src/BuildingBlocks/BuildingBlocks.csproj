@@ -6,4 +6,24 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Needed only for the hand-rolled dispatcher's AddDispatcher(IServiceCollection)
+         registration helper (Messaging/ServiceCollectionExtensions.cs) — this is
+         Microsoft.Extensions.DependencyInjection.Abstractions, not ASP.NET Core or
+         EF Core, so it does not violate the layering rules Architecture.Tests enforces. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <!-- FluentValidation itself has no EF Core/ASP.NET Core dependency, so
+         referencing it here doesn't violate the layering Architecture.Tests
+         enforces — see Messaging/ValidationBehavior.cs. -->
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- So TimestampSaveChangesInterceptor and AuditSaveChangesInterceptor
+         (Platform.Infrastructure, added in a later milestone) can set
+         Entity.CreatedAt/UpdatedAt's internal setters without those
+         properties being publicly settable from every layer. -->
+    <InternalsVisibleTo Include="Platform.Infrastructure" />
+  </ItemGroup>
+
 </Project>
