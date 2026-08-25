@@ -1,0 +1,22 @@
+# Per docs/rules/git-rules.md — every PR requires review from someone
+# outside the PR's author; this file is a starting point, not a
+# substitute for that rule. Update the placeholder team handles once real
+# team assignments exist.
+
+# Architecture and rules documents require Architecture Review Board review
+# per docs/governance/architecture-governance.md.
+/docs/architecture/ @itsm/architecture-review-board
+/docs/adr/ @itsm/architecture-review-board
+/CLAUDE.md @itsm/architecture-review-board
+
+# Security-sensitive code requires security review per
+# docs/rules/security-rules.md.
+/src/Platform/Platform.Infrastructure/ @itsm/security-review
+/src/BuildingBlocks/Tenancy/ @itsm/security-review
+
+# Database migrations touching shared/tenant-scoped tables require a
+# second reviewer per docs/rules/database-rules.md.
+/src/**/Migrations/ @itsm/architecture-review-board
+
+# Default owner for everything else — replace with the real platform team.
+* @itsm/platform-team

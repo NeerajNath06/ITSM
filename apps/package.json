@@ -1,0 +1,11 @@
+{
+  "name": "itsm-apps",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "design-system",
+    "employee-portal",
+    "agent-workspace",
+    "admin-console"
+  ]
+}

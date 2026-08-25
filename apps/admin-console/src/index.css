@@ -1,0 +1,6 @@
+body {
+  margin: 0;
+  font-family: var(--itsm-font-sans, system-ui, sans-serif);
+  background: var(--itsm-color-bg, #fff);
+  color: var(--itsm-color-text, #1a1a1a);
+}

@@ -1,0 +1,66 @@
+# CI pipeline per docs/devops/cicd.md. Gitea-Actions syntax (GitHub Actions
+# compatible) — final CI runner choice (Jenkins vs. Gitea Actions) is an
+# open follow-up per docs/adr/ADR-022-oss-self-hosted-infrastructure-stack.md;
+# this file works unmodified on either a Gitea Actions runner or GitHub
+# Actions if that pick changes.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Restore
+        run: dotnet restore ITSM.slnx
+      - name: Build
+        run: dotnet build ITSM.slnx --no-restore --configuration Release
+      - name: Test
+        run: dotnet test ITSM.slnx --no-build --configuration Release --logger "trx"
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Build design-system
+        run: npm run build --workspace=@itsm/design-system
+      - name: Build apps
+        run: |
+          npm run build --workspace=@itsm/employee-portal
+          npm run build --workspace=@itsm/agent-workspace
+          npm run build --workspace=@itsm/admin-console
+      - name: Lint
+        run: |
+          npm run lint --workspace=@itsm/design-system
+          npm run lint --workspace=@itsm/employee-portal
+          npm run lint --workspace=@itsm/agent-workspace
+          npm run lint --workspace=@itsm/admin-console
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # TODO(Phase 2+): SAST (CodeQL/equivalent), NuGet + npm vulnerability
+      # scan, secret scan (gitleaks-class) — wired once there's real
+      # application code to scan meaningfully, per
+      # docs/devops/cicd.md "Security Scan" stage.
+      - name: Placeholder
+        run: echo "Security scanning wired in a follow-up — see docs/devops/cicd.md"
